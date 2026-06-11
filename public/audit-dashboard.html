@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CLS Audit Intelligence</title>
+    <style>
+      :root {
+        color: #111827;
+        background: #f8fafc;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #f8fafc; }
+      main { max-width: 1180px; margin: 0 auto; padding: 28px 20px 48px; }
+      header { display: flex; justify-content: space-between; align-items: end; gap: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 20px; }
+      h1 { margin: 4px 0 0; font-size: 32px; line-height: 1.15; }
+      h2 { margin: 0; font-size: 17px; }
+      p { margin: 0; }
+      .eyebrow { color: #64748b; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+      .grid { display: grid; gap: 16px; }
+      .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 24px; }
+      .card { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+      .stat-label { color: #64748b; font-size: 13px; font-weight: 600; }
+      .stat-value { margin-top: 8px; font-size: 28px; font-weight: 750; }
+      form { display: grid; grid-template-columns: 180px 1fr 180px auto; gap: 10px; margin-top: 24px; }
+      input, select, textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 12px; font: inherit; background: white; }
+      button, .button { border: 0; border-radius: 6px; background: #111827; color: white; padding: 10px 14px; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; }
+      button.secondary, .button.secondary { background: white; color: #111827; border: 1px solid #cbd5e1; }
+      table { width: 100%; border-collapse: collapse; min-width: 780px; }
+      th, td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 14px; vertical-align: top; }
+      th { background: #f1f5f9; color: #64748b; font-size: 12px; text-transform: uppercase; }
+      .table-wrap { overflow-x: auto; margin-top: 24px; }
+      .pill { display: inline-flex; border-radius: 999px; background: #f1f5f9; padding: 4px 9px; font-size: 12px; font-weight: 700; }
+      .sources { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
+      .source-card h3 { margin: 0; font-size: 14px; }
+      .source-card p { margin-top: 8px; color: #475569; font-size: 13px; line-height: 1.45; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      .detail { display: none; margin-top: 24px; }
+      .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+      .tabs button { background: white; color: #334155; border: 1px solid #cbd5e1; }
+      .tabs button.active { background: #111827; color: white; border-color: #111827; }
+      .checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .check { display: flex; gap: 10px; align-items: start; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; background: #f8fafc; }
+      .finding-template { background: white; color: #111827; border: 1px solid #cbd5e1; font-size: 12px; padding: 7px 10px; min-height: auto; }
+      pre { white-space: pre-wrap; margin: 0; font-family: inherit; line-height: 1.5; color: #334155; }
+      .muted { color: #64748b; }
+      .error { display: none; margin-top: 16px; border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; padding: 12px 14px; border-radius: 6px; }
+      @media (max-width: 820px) {
+        header, form { display: grid; grid-template-columns: 1fr; }
+        .stats, .sources { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">CLS Portal</p>
+          <h1>Audit Intelligence</h1>
+          <p class="muted">VLA standards-aware file audits, findings, summaries, and exports.</p>
+        </div>
+        <a class="button secondary" href="/api/audits" target="_blank">Open API payload</a>
+      </header>
+
+      <div id="error" class="error"></div>
+
+      <section class="grid stats">
+        <div class="card"><p class="stat-label">Total audits</p><p id="totalAudits" class="stat-value">0</p></div>
+        <div class="card"><p class="stat-label">Average score</p><p id="averageScore" class="stat-value">0%</p></div>
+        <div class="card"><p class="stat-label">Open findings</p><p id="openFindings" class="stat-value">0</p></div>
+        <div class="card"><p class="stat-label">High risk audits</p><p id="highRiskAudits" class="stat-value">0</p></div>
+      </section>
+
+      <form id="createAuditForm" class="card">
+        <input id="matterId" placeholder="Matter ID" required />
+        <input id="clientName" placeholder="Client name" />
+        <input id="auditor" placeholder="Auditor" value="Operator" />
+        <button type="submit">Create audit</button>
+      </form>
+
+      <section class="card table-wrap">
+        <h2>Audits</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Matter</th>
+              <th>Client</th>
+              <th>Auditor</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Audit Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="auditRows">
+            <tr><td colspan="7" class="muted">Loading audits...</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="auditDetail" class="card detail">
+        <div style="display:flex; justify-content:space-between; gap:16px; align-items:start;">
+          <div>
+            <p class="eyebrow">Selected audit</p>
+            <h2 id="detailTitle">Audit</h2>
+            <p id="detailMeta" class="muted"></p>
+          </div>
+          <button class="secondary" type="button" onclick="closeAudit()">Close</button>
+        </div>
+
+        <div class="tabs">
+          <button type="button" class="active" data-tab="overview" onclick="showTab('overview')">Overview</button>
+          <button type="button" data-tab="checklist" onclick="showTab('checklist')">Checklist</button>
+          <button type="button" data-tab="evidence" onclick="showTab('evidence')">Evidence</button>
+          <button type="button" data-tab="findings" onclick="showTab('findings')">Findings</button>
+          <button type="button" data-tab="timeline" onclick="showTab('timeline')">Timeline</button>
+          <button type="button" data-tab="summary" onclick="showTab('summary')">Summary</button>
+        </div>
+
+        <div id="tab-overview"></div>
+        <div id="tab-checklist" style="display:none;"></div>
+        <div id="tab-evidence" style="display:none;"></div>
+        <div id="tab-findings" style="display:none;"></div>
+        <div id="tab-timeline" style="display:none;"></div>
+        <div id="tab-summary" style="display:none;"></div>
+      </section>
+
+      <section class="card" style="margin-top: 24px;">
+        <h2>Source documents considered</h2>
+        <div id="sourceCards" class="grid sources"></div>
+      </section>
+    </main>
+
+    <script>
+      const errorBox = document.getElementById("error");
+      let currentAudit = null;
+      const findingTemplates = [
+        ["Conflict Check Missing", "High", "Complete and upload conflict search."],
+        ["Outcome Letter Missing", "Medium", "Prepare and save outcome letter on file."],
+        ["Guideline Evidence Missing", "High", "Upload evidence supporting guideline certification."],
+        ["Attendance Note Missing", "Medium", "Record attendance note with date, participants, advice, and next steps."],
+        ["Claim Evidence Missing", "High", "Attach claim support, appearance notes, invoices, or retained documents."],
+        ["Client Instructions Missing", "High", "Record client instructions and advice given."],
+        ["ATLAS Claim Support Incomplete", "High", "Reconcile ATLAS claim against retained evidence and invoices."],
+        ["Panel Compliance Risk", "High", "Escalate panel compliance issue for principal review."],
+        ["Certifier Revocation Risk", "High", "Review against removal/revocation criteria and document corrective action."],
+      ];
+
+      function showError(message) {
+        errorBox.textContent = message;
+        errorBox.style.display = "block";
+      }
+
+      async function api(path, options = {}) {
+        const response = await fetch(path, {
+          ...options,
+          headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        });
+        const payload = await response.json();
+        if (!response.ok || payload.success === false) {
+          throw new Error(payload.error || "Audit request failed");
+        }
+        return payload;
+      }
+
+      function renderAudits(audits) {
+        const rows = document.getElementById("auditRows");
+        if (!audits.length) {
+          rows.innerHTML = '<tr><td colspan="7" class="muted">No audits yet.</td></tr>';
+          return;
+        }
+        rows.innerHTML = audits.map((audit) => `
+          <tr>
+            <td><strong>${audit.matterId}</strong></td>
+            <td>${audit.clientName || "-"}</td>
+            <td>${audit.auditor || "-"}</td>
+            <td><strong>${audit.score}%</strong></td>
+            <td><span class="pill">${audit.status}</span></td>
+            <td>${audit.auditDate || "-"}</td>
+            <td>
+              <div class="actions">
+                <button type="button" class="secondary" onclick="openAudit(${audit.id})">Open Audit</button>
+                <button type="button" class="secondary" onclick="copyReport(${audit.id})">Copy Report</button>
+              </div>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      function showTab(tab) {
+        ["overview", "checklist", "evidence", "findings", "timeline", "summary"].forEach((name) => {
+          document.getElementById(`tab-${name}`).style.display = name === tab ? "block" : "none";
+          document.querySelector(`[data-tab="${name}"]`).classList.toggle("active", name === tab);
+        });
+      }
+
+      function closeAudit() {
+        currentAudit = null;
+        document.getElementById("auditDetail").style.display = "none";
+      }
+
+      async function openAudit(id) {
+        currentAudit = await api(`/api/audits/${id}`);
+        renderAuditDetail();
+        document.getElementById("auditDetail").style.display = "block";
+        document.getElementById("auditDetail").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      function renderAuditDetail() {
+        const audit = currentAudit.audit;
+        const completed = currentAudit.checklist.filter((item) => item.completed).length;
+        document.getElementById("detailTitle").textContent = `${audit.matterId} - ${audit.clientName || "Audit matter"}`;
+        document.getElementById("detailMeta").textContent = `${audit.auditor || "No auditor"} | ${audit.auditDate || "No date"} | ${audit.score}% | ${audit.status}`;
+        document.getElementById("tab-overview").innerHTML = `
+          <div class="grid stats">
+            <div class="card"><p class="stat-label">Checklist</p><p class="stat-value">${completed}/${currentAudit.checklist.length}</p></div>
+            <div class="card"><p class="stat-label">Findings</p><p class="stat-value">${currentAudit.findings.length}</p></div>
+            <div class="card"><p class="stat-label">Timeline</p><p class="stat-value">${currentAudit.timeline.length}</p></div>
+            <div class="card"><p class="stat-label">Evidence</p><p class="stat-value">${currentAudit.evidenceMatches.length}</p></div>
+          </div>
+        `;
+        renderChecklist();
+        renderEvidence();
+        renderFindings();
+        renderTimeline();
+        renderSummary();
+      }
+
+      function renderChecklist() {
+        const groups = currentAudit.checklist.reduce((acc, item) => {
+          const key = item.standardDomain || "General";
+          acc[key] = [...(acc[key] || []), item];
+          return acc;
+        }, {});
+        document.getElementById("tab-checklist").innerHTML = Object.entries(groups).map(([domain, items]) => `
+          <section class="card" style="margin-top:12px;">
+            <h2>${domain}</h2>
+            <p class="muted">${items[0].sourceReference || ""}</p>
+            <div class="grid checklist" style="margin-top:12px;">
+              ${items.map((item) => `
+                <label class="check">
+                  <input type="checkbox" ${item.completed ? "checked" : ""} onchange="toggleChecklist('${item.checklistKey}', this.checked)" />
+                  <span>${item.checklistLabel}</span>
+                </label>
+              `).join("")}
+            </div>
+          </section>
+        `).join("");
+      }
+
+      async function toggleChecklist(checklistKey, completed) {
+        await api(`/api/audits/${currentAudit.audit.id}/checklist`, {
+          method: "POST",
+          body: JSON.stringify({ checklistKey, completed }),
+        });
+        await openAudit(currentAudit.audit.id);
+        await loadDashboard();
+      }
+
+      function renderEvidence() {
+        const matchedKeys = [...new Set(currentAudit.evidenceMatches.map((match) => match.checklistKey))];
+        document.getElementById("tab-evidence").innerHTML = `
+          <section class="card">
+            <h2>Upload electronic file material</h2>
+            <p class="muted" style="margin-top:6px;">Upload PDFs, DOCX files, notes, letters, invoices, claim material, or other file documents. The system scans them and proposes evidence matches for review.</p>
+            <form id="uploadForm" style="grid-template-columns:1fr 1fr auto; margin-top:14px;">
+              <input id="auditFile" type="file" multiple title="Upload selected files" />
+              <input id="auditFolder" type="file" webkitdirectory directory multiple title="Upload a folder" />
+              <button type="submit">Upload and scan</button>
+            </form>
+          </section>
+          <section class="card" style="margin-top:12px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+              <div>
+                <h2>Evidence matches</h2>
+                <p class="muted">${currentAudit.documents.length} document(s), ${currentAudit.evidenceMatches.length} proposed match(es)</p>
+              </div>
+              <button class="secondary" type="button" onclick="applyEvidenceMatches()" ${matchedKeys.length ? "" : "disabled"}>Mark matched checklist items complete</button>
+            </div>
+            <div style="margin-top:12px;">
+              ${currentAudit.evidenceMatches.length ? currentAudit.evidenceMatches.map((match) => {
+                const item = currentAudit.checklist.find((check) => check.checklistKey === match.checklistKey);
+                const document = currentAudit.documents.find((doc) => doc.id === match.documentId);
+                return `<div class="card" style="margin-top:10px;">
+                  <span class="pill">${match.confidence}% confidence</span>
+                  <h2 style="margin-top:8px;">${item?.checklistLabel || match.checklistKey}</h2>
+                  <p class="muted">${match.evidenceLabel} from ${document?.fileName || "uploaded document"}</p>
+                  <p style="margin-top:8px;">${match.evidenceExcerpt || ""}</p>
+                </div>`;
+              }).join("") : '<p class="muted">No evidence matches yet. Upload the electronic file material to scan it.</p>'}
+            </div>
+          </section>
+          <section class="card" style="margin-top:12px;">
+            <h2>Uploaded documents</h2>
+            <div style="margin-top:10px;">${currentAudit.documents.length ? currentAudit.documents.map((doc) => `<p><strong>${doc.fileName}</strong> <span class="muted">(${Math.round(doc.fileSize / 1024)} KB)</span></p>`).join("") : '<p class="muted">No documents uploaded.</p>'}</div>
+          </section>
+        `;
+        document.getElementById("uploadForm").addEventListener("submit", uploadFiles);
+      }
+
+      async function uploadFiles(event) {
+        event.preventDefault();
+        const files = [
+          ...document.getElementById("auditFile").files,
+          ...document.getElementById("auditFolder").files,
+        ];
+        for (const file of files) {
+          const uploadName = file.webkitRelativePath || file.name;
+          const response = await fetch(`/api/audits/${currentAudit.audit.id}/documents/raw?fileName=${encodeURIComponent(uploadName)}`, {
+            method: "PUT",
+            headers: { "Content-Type": file.type || "application/octet-stream" },
+            body: file,
+          });
+          const payload = await response.json();
+          if (!response.ok || payload.success === false) {
+            throw new Error(payload.error || `Upload failed for ${file.name}`);
+          }
+        }
+        document.getElementById("auditFile").value = "";
+        document.getElementById("auditFolder").value = "";
+        await openAudit(currentAudit.audit.id);
+        showTab("evidence");
+        await loadDashboard();
+      }
+
+      async function applyEvidenceMatches() {
+        const keys = [...new Set(currentAudit.evidenceMatches.map((match) => match.checklistKey))];
+        for (const checklistKey of keys) {
+          await api(`/api/audits/${currentAudit.audit.id}/checklist`, {
+            method: "POST",
+            body: JSON.stringify({ checklistKey, completed: true }),
+          });
+        }
+        await openAudit(currentAudit.audit.id);
+        showTab("checklist");
+        await loadDashboard();
+      }
+
+      function renderFindings() {
+        document.getElementById("tab-findings").innerHTML = `
+          <form id="findingForm" class="card" style="grid-template-columns:140px 1fr 1fr auto;">
+            <select id="findingSeverity"><option>High</option><option>Medium</option><option>Low</option></select>
+            <input id="findingText" placeholder="Finding" />
+            <input id="actionRequired" placeholder="Action required" />
+            <button type="submit">Add</button>
+          </form>
+          <div class="actions" style="margin:12px 0;">${findingTemplates.map(([label, severity, action]) => `<button class="finding-template" type="button" onclick="addFinding('${label}', '${severity}', '${action}')">${label}</button>`).join("")}</div>
+          <div>${currentAudit.findings.length ? currentAudit.findings.map((item) => `<div class="card" style="margin-top:10px;"><span class="pill">${item.severity}</span> <span class="pill">${item.status}</span><h2 style="margin-top:8px;">${item.finding}</h2><p class="muted">${item.actionRequired || ""}</p></div>`).join("") : '<p class="muted">No findings recorded.</p>'}</div>
+        `;
+        document.getElementById("findingForm").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await addFinding(
+            document.getElementById("findingText").value,
+            document.getElementById("findingSeverity").value,
+            document.getElementById("actionRequired").value
+          );
+        });
+      }
+
+      async function addFinding(finding, severity, actionRequired) {
+        if (!finding) return;
+        await api(`/api/audits/${currentAudit.audit.id}/findings`, {
+          method: "POST",
+          body: JSON.stringify({ severity, finding, actionRequired }),
+        });
+        await openAudit(currentAudit.audit.id);
+        showTab("findings");
+        await loadDashboard();
+      }
+
+      function renderTimeline() {
+        document.getElementById("tab-timeline").innerHTML = `
+          <form id="timelineForm" class="card" style="grid-template-columns:150px 180px 1fr 160px auto;">
+            <input id="eventDate" type="date" />
+            <input id="eventType" placeholder="Event" />
+            <input id="description" placeholder="Description" />
+            <input id="evidenceType" placeholder="Evidence" />
+            <button type="submit">Add</button>
+          </form>
+          <div class="table-wrap">${currentAudit.timeline.length ? `<table><thead><tr><th>Date</th><th>Event</th><th>Description</th><th>Evidence</th></tr></thead><tbody>${currentAudit.timeline.map((event) => `<tr><td>${event.eventDate || "-"}</td><td>${event.eventType || "-"}</td><td>${event.description || "-"}</td><td>${event.evidenceType || "-"}</td></tr>`).join("")}</tbody></table>` : '<p class="muted">No timeline events recorded.</p>'}</div>
+        `;
+        document.getElementById("timelineForm").addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await api(`/api/audits/${currentAudit.audit.id}/timeline`, {
+            method: "POST",
+            body: JSON.stringify({
+              eventDate: document.getElementById("eventDate").value,
+              eventType: document.getElementById("eventType").value,
+              description: document.getElementById("description").value,
+              evidenceType: document.getElementById("evidenceType").value,
+            }),
+          });
+          await openAudit(currentAudit.audit.id);
+          showTab("timeline");
+        });
+      }
+
+      function renderSummary() {
+        document.getElementById("tab-summary").innerHTML = `
+          <div class="actions" style="margin-bottom:12px;">
+            <button type="button" onclick="generateSummary()">Regenerate summary</button>
+            <button class="secondary" type="button" onclick="copyReport(${currentAudit.audit.id})">Copy report JSON</button>
+          </div>
+          <div class="card"><pre>${currentAudit.audit.summary || "No summary generated."}</pre></div>
+        `;
+      }
+
+      async function generateSummary() {
+        await api(`/api/audits/${currentAudit.audit.id}/generate-summary`, { method: "POST", body: "{}" });
+        await openAudit(currentAudit.audit.id);
+        showTab("summary");
+      }
+
+      async function copyReport(id) {
+        const report = await api(`/api/audits/${id}`);
+        const text = JSON.stringify(report, null, 2);
+        try {
+          await navigator.clipboard.writeText(text);
+          alert("Audit report copied.");
+        } catch {
+          const box = document.createElement("textarea");
+          box.value = text;
+          box.style.width = "100%";
+          box.style.height = "240px";
+          document.getElementById("auditDetail").style.display = "block";
+          document.getElementById("tab-summary").innerHTML = "";
+          document.getElementById("tab-summary").appendChild(box);
+          showTab("summary");
+        }
+      }
+
+      function renderSources(sources) {
+        document.getElementById("sourceCards").innerHTML = sources.map((source) => `
+          <article class="source-card">
+            <h3>${source.title}</h3>
+            <p><strong>${source.version}</strong></p>
+            <p>${source.focus}</p>
+          </article>
+        `).join("");
+      }
+
+      async function loadDashboard() {
+        errorBox.style.display = "none";
+        try {
+          const payload = await api("/api/audits");
+          document.getElementById("totalAudits").textContent = payload.stats.totalAudits;
+          document.getElementById("averageScore").textContent = `${payload.stats.averageScore}%`;
+          document.getElementById("openFindings").textContent = payload.stats.openFindings;
+          document.getElementById("highRiskAudits").textContent = payload.stats.highRiskAudits;
+          renderAudits(payload.audits || []);
+          renderSources(payload.sources || []);
+        } catch (error) {
+          showError(error.message);
+        }
+      }
+
+      document.getElementById("createAuditForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+          const payload = await api("/api/audits", {
+            method: "POST",
+            body: JSON.stringify({
+              matterId: document.getElementById("matterId").value,
+              clientName: document.getElementById("clientName").value,
+              auditor: document.getElementById("auditor").value || "Operator",
+            }),
+          });
+          document.getElementById("matterId").value = "";
+          document.getElementById("clientName").value = "";
+          await api(`/api/audits/${payload.auditId}/generate-summary`, { method: "POST", body: "{}" });
+          await loadDashboard();
+        } catch (error) {
+          showError(error.message);
+        }
+      });
+
+      loadDashboard();
+    </script>
+  </body>
+</html>

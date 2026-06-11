@@ -1,0 +1,54 @@
+/* Print styles for Intake Form */
+@media print {
+  .intake-print-header {
+    display: none !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  .flex {
+    display: flex;
+  }
+
+  .flex-col {
+    flex-direction: column;
+  }
+
+  .flex-1 {
+    flex: 1 1 0%;
+  }
+
+  iframe {
+    border: none !important;
+    height: 100% !important;
+    min-height: 100vh !important;
+    display: block !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Optimize print layout */
+  @page {
+    size: letter;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Hide Print/Download buttons in embedded iframes */
+iframe[src*="lacw-intake-form"] {
+  filter: drop-shadow(0 0 0px);
+}
+
+/* Hide embedded form buttons via CSS that targets common selectors */
+button[aria-label*="Print"],
+button[aria-label*="Download"],
+[class*="print-button"],
+[class*="download-button"],
+[class*="PrintDownload"],
+[class*="print-download"] {
+  display: none !important;
+}

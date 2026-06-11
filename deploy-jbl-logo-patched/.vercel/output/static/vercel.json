@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/((?!assets/|jarrod-behan-law-logo.webp|jbl-logo.png|favicon.ico).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "allowJs": true,
+    "checkJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["react", "react-dom", "vite/client"]
+  },
+  "include": [
+    "src/components/form/FormField.jsx",
+    "src/components/form/SavePDFDialog.jsx",
+    "src/components/form/Step3Employment.jsx",
+    "src/components/form/Step6OtherParties.jsx",
+    "src/components/form/Step9SpecificMatters.jsx",
+    "src/components/aid/ChargeSelector.jsx",
+    "src/components/BundleBar.jsx",
+    "src/components/intake/FormField.jsx",
+    "src/components/intake/SectionHeader.jsx",
+    "src/types/**/*.d.ts"
+  ]
+}
