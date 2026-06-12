@@ -20,6 +20,8 @@ import ApplyForAid from '@/pages/ApplyForAid';
 import StandAloneGuidelines from '@/pages/StandAloneGuidelines';
 import InboxScanner from './InboxScanner.jsx';
 import AuditMatter from '@/pages/AuditMatter';
+import AuditManager from '@/pages/AuditManager';
+import AdminPortal from '@/pages/AdminPortal';
 
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -83,6 +85,11 @@ const AuthenticatedApp = () => {
       <Route path="/StandAloneGuidelines" element={<LayoutWrapper currentPageName="StandAloneGuidelines"><StandAloneGuidelines /></LayoutWrapper>} />
       <Route path="/jbl-portal" element={<StandAloneGuidelines />} />
       <Route path="/InboxScanner" element={<LayoutWrapper currentPageName="InboxScanner"><InboxScanner /></LayoutWrapper>} />
+      <Route path="/Inbox" element={<LayoutWrapper currentPageName="InboxScanner"><InboxScanner /></LayoutWrapper>} />
+      <Route path="/inbox" element={<LayoutWrapper currentPageName="InboxScanner"><InboxScanner /></LayoutWrapper>} />
+      <Route path="/jbl-audit-manager" element={<LayoutWrapper currentPageName="AuditManager"><AuditManager /></LayoutWrapper>} />
+      <Route path="/admin-portal" element={<LayoutWrapper currentPageName="admin-portal"><AdminPortal /></LayoutWrapper>} />
+      <Route path="/admin-inbox" element={<LayoutWrapper currentPageName="admin-portal"><AdminPortal /></LayoutWrapper>} />
       <Route path="/AuditMatter/:id" element={<LayoutWrapper currentPageName="AuditMatter"><AuditMatter /></LayoutWrapper>} />
 
       <Route path="*" element={<PageNotFound />} />
