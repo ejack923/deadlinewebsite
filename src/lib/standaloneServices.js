@@ -5,6 +5,8 @@ import { createWorker } from "tesseract.js";
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
+const API_BASE = (import.meta.env?.VITE_APP_API_BASE_URL || "").replace(/\/+$/, "");
+
 const OUTBOX_KEY = "demo_standalone_outbox";
 const UPLOADS_KEY = "demo_standalone_uploads";
 const LEGAL_AID_APPLICATIONS_KEY = "demo_legal_aid_applications";
@@ -1626,7 +1628,7 @@ export async function parseLacwDiaryFileStandalone(file) {
   });
 
   try {
-    const response = await fetch("/api/parse-diary", {
+    const response = await fetch(`${API_BASE}/api/parse-diary`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

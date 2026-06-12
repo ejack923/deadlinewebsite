@@ -4,6 +4,8 @@ import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 GlobalWorkerOptions.workerSrc = workerSrc;
 
+const API_BASE = (import.meta.env?.VITE_AUDIT_API_BASE || "").replace(/\/+$/, "");
+
 const PDFJS_BROWSER_OPTIONS = {
   disableWorker: true,
   useSystemFonts: true,
@@ -873,7 +875,7 @@ function fileToBase64(file) {
 export async function parseAidLetterUpload(file) {
   try {
     const base64 = await fileToBase64(file);
-    const response = await fetch("/api/parse-aid-letter", {
+    const response = await fetch(`${API_BASE}/api/parse-aid-letter`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
