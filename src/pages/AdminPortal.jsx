@@ -1,8 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Mail, ShieldCheck, Clock, ArrowRight, Activity, Cpu } from "lucide-react";
 
 export default function AdminPortal() {
+  const [emailCount, setEmailCount] = useState(211); // Fallback to 211 as requested if fetch fails
+
+  useEffect(() => {
+    fetch("/api/lacw-emails")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.emails)) {
+          setEmailCount(data.emails.length);
+        }
+      })
+      .catch((err) => console.error("Failed to load email count:", err));
+  }, []);
+
   const adminTools = [
     {
       title: "Submissions Inbox",
@@ -36,6 +49,17 @@ export default function AdminPortal() {
       iconColor: "text-indigo-600 bg-indigo-50",
       borderColor: "hover:border-indigo-300",
       shadowColor: "hover:shadow-indigo-50/50"
+    },
+    {
+      title: "LACW New Files Emails",
+      description: "Review new LACW files, automate ATLAS letter attachments, and track real-time funding statuses.",
+      icon: Mail,
+      href: "/lacw-portal",
+      tag: `Extracted Messages ${emailCount}`,
+      badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
+      iconColor: "text-purple-600 bg-purple-50",
+      borderColor: "hover:border-purple-300",
+      shadowColor: "hover:shadow-purple-50/50"
     }
   ];
 
@@ -65,13 +89,17 @@ export default function AdminPortal() {
         </header>
 
         {/* Tools Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {adminTools.map((tool) => {
             const Icon = tool.icon;
+            const isExternal = tool.href === "/lacw-portal";
+            const CardComponent = isExternal ? "a" : Link;
+            const props = isExternal ? { href: tool.href } : { to: tool.href };
+
             return (
-              <Link
+              <CardComponent
                 key={tool.title}
-                to={tool.href}
+                {...props}
                 className={`flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-350 ${tool.borderColor} ${tool.shadowColor} hover:shadow-lg hover:-translate-y-1 group`}
               >
                 <div>
@@ -100,7 +128,7 @@ export default function AdminPortal() {
                   <span>Launch Module</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
-              </Link>
+              </CardComponent>
             );
           })}
         </div>

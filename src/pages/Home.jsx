@@ -40,6 +40,7 @@ const tools = [
   { title: "Audit Intelligence", description: "Run file audits, findings, checklists, summaries, and exports", icon: ShieldCheck, page: "AuditDashboard" },
   { title: "Inbox Scanner", description: "Review Gmail funding, billing, admin, and deadline signals", icon: Mail, page: "InboxScanner" },
   { title: "Aid Request", description: "Submit an application for legal aid assistance", icon: FileCheck, page: "ApplyForAid" },
+  { title: "LACW New Files Emails", description: "Manage new files, ATLAS letter uploads, and statuses", icon: Mail, page: "lacw-portal", isExternal: true },
 ];
 
 const menuItems = [
@@ -653,7 +654,7 @@ export default function Home() {
                     {tools.map((tool) => (
                       <a
                         key={tool.page}
-                        href={createPageUrl(tool.page)}
+                        href={tool.isExternal ? "/lacw-portal" : createPageUrl(tool.page)}
                         className="block px-3 py-1.5 text-xs font-medium text-slate-500 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-colors"
                       >
                         {tool.title}

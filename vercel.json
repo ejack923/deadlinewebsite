@@ -2,6 +2,22 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
+      "source": "/api/admin/operators",
+      "destination": "/api/admin/operators.js"
+    },
+    {
+      "source": "/api/submissions",
+      "destination": "/api/submissions.js"
+    },
+    {
+      "source": "/api/submissions/:id",
+      "destination": "/api/submissions.js"
+    },
+    {
+      "source": "/api/submissions/:id/comments",
+      "destination": "/api/submissions.js"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
